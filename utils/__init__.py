@@ -1,5 +1,5 @@
 from .states import RegistrationStates
-from .kb import steps_kb
+from .kb import *
 from .dbase import Dbase
 
 
