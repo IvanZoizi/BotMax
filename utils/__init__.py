@@ -3,4 +3,6 @@ from .kb import *
 from .dbase import Dbase
 
 
-dbase = Dbase("./db.sqlite")
+
+
+db = Dbase()

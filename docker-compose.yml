@@ -1,0 +1,63 @@
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: postgres
+    env_file:
+      - .env
+    environment:
+      - POSTGRES_DB=${POSTGRES_DB:-tgbot}
+      - POSTGRES_USER=${POSTGRES_USER:-tgbot_user}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./logs/postgres:/var/log/postgresql
+      - ./postgres/init:/docker-entrypoint-initdb.d
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - app-network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+        labels: "postgres"
+
+  tgbot:
+    build: .
+    container_name: tgbot
+    user: appuser
+    restart: unless-stopped
+    env_file:
+      - .env
+    volumes:
+      - ./logs/bot:/app/logs
+    environment:
+      - PYTHONPATH=/app
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_NAME=${POSTGRES_NAME:-tgbot}
+      - DB_USER=${POSTGRES_USER:-tgbot_user}
+      - DB_PASSWORD=${POSTGRES_PASSWORD}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - app-network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+        labels: "tgbot"
+
+volumes:
+  postgres_data:
+
+networks:
+  app-network:
+    driver: bridge
