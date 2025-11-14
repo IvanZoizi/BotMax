@@ -11,7 +11,9 @@ import asyncio
 from bot import bot
 
 pomodoro_router = Router()
-#TODO дописать методы БД
+#TODO: дописать методы БД
+#TODO: Добавить обработчики для паузы, возобновления, статуса и отмены
+#TODO: проверить циклическую зависимость bot
 
 async def get_event_name(event_id: int) -> str:
     """Получить название события по ID"""
@@ -177,7 +179,6 @@ async def start_break_period(callback: MessageCallback, context: MemoryContext):
         await callback.message.answer(f"☕ Начался {break_type} перерыв! Отдохните {duration // 60} минут")
 
 
-# Добавьте аналогичные обработчики для паузы, возобновления, статуса и отмены
 
 @pomodoro_router.message_callback(F.callback.payload == 'pomodoro_stats')
 async def show_pomodoro_stats(callback: MessageCallback, context: MemoryContext):
