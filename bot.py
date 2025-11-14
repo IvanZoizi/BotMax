@@ -10,6 +10,7 @@ from config import token
 from utils import dbase, RegistrationStates
 from handlers import routers
 from utils import *
+from utils.dbase import init_db
 
 bot = Bot(token=token)
 dp = Dispatcher()
@@ -60,6 +61,7 @@ async def hello(event: MessageCreated, context: MemoryContext):
 
 async def main():
     """Основная функция запуска бота"""
+    await init_db()
     dp.include_routers(*routers)
 
     print("Бот запущен...")

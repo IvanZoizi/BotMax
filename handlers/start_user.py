@@ -136,7 +136,7 @@ async def end_to_step(call: MessageCallback, context: MemoryContext):
     data = await context.get_data()
     await context.clear()
 
-    dbase.new_user(
+    await dbase.new_user(
         call.from_user.user_id,
         data['name'],
         data['email'],
