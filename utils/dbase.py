@@ -1,4 +1,3 @@
-import configparser
 from contextlib import asynccontextmanager
 import asyncpg
 import asyncio
@@ -63,7 +62,8 @@ async def init_db():
                     end_time TIMESTAMP,
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                    FOREIGN KEY (user_id) REFERENCES users (user_id) ON DELETE CASCADE
+                    FOREIGN KEY (user_id) REFERENCES users (user_id) ON DELETE CASCADE,
+                    UNIQUE (user_id, event_id)
                 );
             """)
 
@@ -81,21 +81,7 @@ async def init_db():
                     UNIQUE(user_id, event_id)
                 );
             """)
-            await conn.execute("""CREATE TABLE IF NOT EXISTS notifications (
-    id SERIAL PRIMARY KEY,
-    user_id INTEGER NOT NULL,
-    day INTEGER NOT NULL,
-    time TEXT NOT NULL,
-    cron_id TEXT NOT NULL
-);
 
-            """)
-            await conn.execute("""CREATE TABLE IF NOT EXISTS users_entrance (
-                user_id INTEGER NOT NULL,
-                entrance_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            );
-
-                        """)
 
             await conn.execute("""
                 CREATE INDEX IF NOT EXISTS idx_pomodoro_user_id 
@@ -302,71 +288,20 @@ class Dbase:
             """, user_id)
 
     @staticmethod
-    async def new_notification(user_id, day_id, cron_id, time):
+    async def save_pomodoro_statistics(user_id: int, event_id: int, pomodoros_completed: int, total_work_time: int):
+        """Сохранить или обновить статистику Pomodoro"""
         async with get_connection() as conn:
-            await conn.execute("""INSERT INTO notifications(user_id, day, cron_id, time) VALUES($1, $2, $3, $4)""", user_id, day_id, cron_id, time)
-
-    @staticmethod
-    async def check_user_notification(cron_id):
-        async with get_connection() as conn:
-            return await conn.fetch("""SELECT user_id FROM notifications WHERE cron_id = $1""", cron_id)
-
-    @staticmethod
-    async def get_users_notification(user_id):
-        async with get_connection() as conn:
-            return await conn.fetch("""SELECT * FROM notifications WHERE user_id = $1""", user_id)
-
-    @staticmethod
-    async def get_user_notification_by_id(id):
-        async with get_connection() as conn:
-            return await conn.fetchrow("""SELECT * FROM notifications WHERE id = $1""", id)
-
-    @staticmethod
-    async def get_user_notification_by_time(time):
-        async with get_connection() as conn:
-            return await conn.fetchrow("""SELECT * FROM notifications WHERE time = $1""", time)
-
-    @staticmethod
-    async def update_time_notification(id, time, cron_id):
-        async with get_connection() as conn:
-            await conn.execute("""UPDATE notifications SET time = $1, cron_id = $2 WHERE id = $3""", time, cron_id, id)
-
-
-    @staticmethod
-    async def delete_notification(id):
-        async with get_connection() as conn:
-            await conn.execute("""DELETE FROM notifications WHERE id = $1""", id)
-
-    @staticmethod
-    async def get_all_notification():
-        async with get_connection() as conn:
-            return await conn.fetch("""SELECT * FROM notifications""")
-
-    @staticmethod
-    async def get_user_entrance(user_id):
-        async with get_connection() as conn:
-            return await conn.fetch("""SELECT * FROM users_entrance WHERE user_id = $1 AND DATE(entrance_at) = CURRENT_DATE""", user_id)
-
-    @staticmethod
-    async def new_user_entrance(user_id):
-        async with get_connection() as conn:
-            await conn.execute("""INSERT INTO users_entrance(user_id) VALUES($1)""", user_id)
-
-    @staticmethod
-    async def new_day_user(user_id):
-        async with get_connection() as conn:
-            await conn.execute("""UPDATE users SET everyday = everyday + 1 WHERE user_id = $1""", user_id)
-
-    @staticmethod
-    async def get_last_day_users(day):
-        async with get_connection() as conn:
-            await conn.fetch("""SELECT user_id FROM users_entrance 
-WHERE DATE(entrance_at) = CURRENT_DATE - INTERVAL '$1 days';""", day)
-
-    @staticmethod
-    async def set_everyday_user(user_id, everyday):
-        async with get_connection() as conn:
-            await conn.execute("""UPDATE users SET everyday = $1 WHERE user_id = $2""", everyday, user_id)
+            await conn.execute("""
+                INSERT INTO pomodoro_stats 
+                (user_id, event_id, pomodoros_completed, total_work_time, last_session)
+                VALUES ($1, $2, $3, $4, CURRENT_TIMESTAMP)
+                ON CONFLICT (user_id, event_id) 
+                DO UPDATE SET 
+                    pomodoros_completed = EXCLUDED.pomodoros_completed,
+                    total_work_time = EXCLUDED.total_work_time,
+                    last_session = EXCLUDED.last_session,
+                    updated_at = CURRENT_TIMESTAMP
+            """, user_id, event_id, pomodoros_completed, total_work_time)
 
 
 async def main():
