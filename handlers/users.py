@@ -2,23 +2,61 @@ from maxapi import Router, types, F
 from maxapi.context import MemoryContext
 from maxapi.enums.parse_mode import ParseMode
 from maxapi.types import MessageCreated, MessageCallback
+from datetime import datetime
 
 from utils import *
 
 users_routers = Router()
 
 
+def format_days_with_us(created_at):
+    """Форматирование времени с нами в читаемом виде"""
+    if isinstance(created_at, str):
+        created_at = datetime.fromisoformat(created_at.replace('Z', '+00:00'))
+
+    now = datetime.now()
+    delta = now - created_at
+
+    days = delta.days
+    months = days // 30
+    years = days // 365
+
+    if years > 0:
+        return f"{years} {get_plural(years, 'год', 'года', 'лет')}"
+    elif months > 0:
+        return f"{months} {get_plural(months, 'месяц', 'месяца', 'месяцев')}"
+    else:
+        return f"{days} {get_plural(days, 'день', 'дня', 'дней')}"
+
+
+def get_plural(number, form1, form2, form5):
+    """Функция для правильного склонения слов"""
+    n = abs(number) % 100
+    n1 = n % 10
+    if 10 < n < 20:
+        return form5
+    if n1 == 1:
+        return form1
+    if 1 < n1 < 5:
+        return form2
+    return form5
+
+
 @users_routers.message_callback(F.callback.payload == 'profile')
 async def end_to_step(call: MessageCallback):
     await call.message.delete()
     user = await Dbase.get_user(call.from_user.user_id)
+
+    # Форматируем время с нами
+    days_with_us = format_days_with_us(user[6])  # created_at находится в 6-м элементе
+
     await call.message.answer(f"""🌟 **Ваш профиль**
 
 👤 **Имя:** {user[1]}
 📧 **Email:** {user[2]}
 🎯 **Цель:** {user[3]}
-📅 **С нами уже:** {user[4]} дней
-🔥 **Активная серия:** {user[5]} дней подряд
+📅 **С нами уже:** {days_with_us}
+🔥 **Активная серия:** {user[5]} {get_plural(user[5], 'день', 'дня', 'дней')} подряд
 
 💫 Продолжайте двигаться к своим целям! Каждый день — это новая возможность стать лучше.""",
                               parse_mode=ParseMode.MARKDOWN, attachments=[start_kb()])

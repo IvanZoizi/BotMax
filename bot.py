@@ -1,14 +1,17 @@
 import asyncio
+from typing import Callable, Dict, Any, Awaitable
+
 
 from maxapi.context import MemoryContext
 from maxapi import Bot, Dispatcher, Router, F
 from maxapi.context import StatesGroup, State
 from maxapi.filters.command import Command
-from maxapi.types import Message, MessageCreated, BotStarted
+from maxapi.types import Message, MessageCreated, BotStarted, MessageCallback
+from pydantic.v1.validators import anystr_strip_whitespace
 
 from config import token
 from utils import dbase, RegistrationStates
-from handlers import routers
+from handlers import routers, scheduler, notification_settings, reminder_notification
 from utils import *
 from utils.dbase import init_db
 
@@ -16,11 +19,33 @@ bot = Bot(token=token)
 dp = Dispatcher()
 
 
+class UserMiddleware:
+    """Middleware для добавления user_id в контекст всех обработчиков"""
+
+    async def __call__(
+            self,
+            handler: Callable[[Any, Dict[str, Any]], Awaitable[Any]],
+            event: Any,
+            data: Dict[str, Any]
+    ) -> Any:
+        # Получаем user_id из события
+        user_id = None
+        if hasattr(event, 'from_user') and hasattr(event.from_user, 'user_id'):
+            user_id = event.from_user.user_id
+        elif hasattr(event, 'user_id'):
+            user_id = event.user_id
+        elif hasattr(event, 'chat_id'):
+            user_id = event.chat_id
+        if not await Dbase.get_user_entrance(user_id):
+            await Dbase.new_user_entrance(user_id)
+            await Dbase.new_day_user(user_id)
+
+        return await handler(event, data)
+
+
 @dp.bot_started()
 async def bot_started(event: BotStarted, context: MemoryContext):
-    print(await bot.get_chat_by_id(88815894))
-    print(event.user.user_id)
-    if dbase.get_user(event.from_user.user_id):
+    if await Dbase.get_user(event.from_user.user_id):
         await event.message.answer("""Рад снова вас видеть! Чем займёмся сегодня? 😊""",
                                    attachments=[start_kb()])
     else:
@@ -39,12 +64,11 @@ async def bot_started(event: BotStarted, context: MemoryContext):
 
 @dp.message_created(Command('start'))
 async def hello(event: MessageCreated, context: MemoryContext):
-    print(await bot.get_chat_by_id(88815894))
-    if dbase.get_user(event.from_user.user_id):
+    if await Dbase.get_user(event.from_user.user_id):
         await event.message.answer("""Рад снова вас видеть! Чем займёмся сегодня? 😊""",
                                    attachments=[start_kb()])
     else:
-        await event.message.answer("""
+        mes = await event.message.answer("""
 🤖 Добро пожаловать в бот продуктивности "Фокус"!
 
 Здесь вы сможете:
@@ -55,7 +79,15 @@ async def hello(event: MessageCreated, context: MemoryContext):
 
 Для начала работы необходимо зарегистрироваться!
 Введите ваше имя!""")
+        await context.update_data(message=mes.message)
         await context.set_state(RegistrationStates.waiting_for_name)
+
+
+@dp.message_created(F.callback.payload == 'start')
+async def hello(call: MessageCallback):
+    await call.message.delete()
+    await call.message.answer("""Рад снова вас видеть! Чем займёмся сегодня? 😊""",
+                                   attachments=[start_kb()])
 
 
 
@@ -63,7 +95,25 @@ async def main():
     """Основная функция запуска бота"""
     await init_db()
     dp.include_routers(*routers)
-
+    dp.middleware(UserMiddleware())
+    data = await Dbase.get_all_notification()
+    for i in data:
+        hours, minutes = list(map(int, i[3].split(":")))
+        scheduler.add_job(
+                func=notification_settings,
+                trigger='cron',
+                minute=minutes,
+                hour=hours,
+                id=i[4],
+                args=(bot, i[3],)
+        )
+    scheduler.add_job(
+        func=reminder_notification,
+        trigger='cron',
+        minute=0,
+        hour=12,
+        args=(bot,)
+    )
     print("Бот запущен...")
     await dp.start_polling(bot)
 
