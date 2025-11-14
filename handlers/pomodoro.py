@@ -77,7 +77,7 @@ async def start_pomodoro(callback: MessageCallback, context: MemoryContext):
     for step in user_steps:
         keyboard.row(CallbackButton(
             text=step['name'],
-            payload=f"pomodoro_start:{step['id']}"
+            payload=f"pomodoro_start:{step['step_id']}"
         ))
 
     await callback.message.answer(
