@@ -1,3 +1,13 @@
+from utils import Dbase
+import asyncio
+
+async def main():
+    print(await Dbase.get_user('me'))
+    print(await Dbase.get_user('me'))
+
+if __name__ == "__main__":
+    asyncio.run(main())
+
 # # Установите библиотеку: pip install timezonefinder
 #
 # from timezonefinder import TimezoneFinder
