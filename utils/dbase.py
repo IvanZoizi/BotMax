@@ -124,6 +124,11 @@ class Dbase:
                 """, user_id, step)
 
     @staticmethod
+    async def new_goal(user_id, goal):
+        async with get_connection() as conn:
+            await conn.execute("""UPDATE users SET goal = $1 WHERE user_id = $2""", goal, user_id)
+
+    @staticmethod
     async def new_user(user_id, name, email, goal, steps):
         """Создать нового пользователя"""
         async with get_connection() as conn:
