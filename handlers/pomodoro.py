@@ -13,7 +13,6 @@ from bot import bot
 pomodoro_router = Router()
 #TODO: дописать методы БД
 #TODO: Добавить обработчики для паузы, возобновления, статуса и отмены
-#TODO: проверить циклическую зависимость bot
 
 async def get_event_name(event_id: int) -> str:
     """Получить название события по ID"""
