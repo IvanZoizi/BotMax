@@ -10,6 +10,7 @@ from config import token
 from utils import dbase, RegistrationStates
 from handlers import routers
 from utils import *
+from utils.dbase import init_db
 
 bot = Bot(token=token)
 dp = Dispatcher()
@@ -17,9 +18,7 @@ dp = Dispatcher()
 
 @dp.bot_started()
 async def bot_started(event: BotStarted, context: MemoryContext):
-    print(await bot.get_chat_by_id(88815894))
-    print(event.user.user_id)
-    if dbase.get_user(event.from_user.user_id):
+    if await Dbase.get_user(event.from_user.user_id):
         await event.message.answer("""Рад снова вас видеть! Чем займёмся сегодня? 😊""",
                                    attachments=[start_kb()])
     else:
@@ -38,12 +37,12 @@ async def bot_started(event: BotStarted, context: MemoryContext):
 
 @dp.message_created(Command('start'))
 async def hello(event: MessageCreated, context: MemoryContext):
-    print(await bot.get_chat_by_id(88815894))
-    if dbase.get_user(event.from_user.user_id):
+    await Dbase.new_steps(event.from_user.user_id, ["123213", "12312313"])
+    if await Dbase.get_user(event.from_user.user_id):
         await event.message.answer("""Рад снова вас видеть! Чем займёмся сегодня? 😊""",
                                    attachments=[start_kb()])
     else:
-        await event.message.answer("""
+        mes = await event.message.answer("""
 🤖 Добро пожаловать в бот продуктивности "Фокус"!
 
 Здесь вы сможете:
@@ -54,12 +53,14 @@ async def hello(event: MessageCreated, context: MemoryContext):
 
 Для начала работы необходимо зарегистрироваться!
 Введите ваше имя!""")
+        await context.update_data(message=mes.message)
         await context.set_state(RegistrationStates.waiting_for_name)
 
 
 
 async def main():
     """Основная функция запуска бота"""
+    await init_db()
     dp.include_routers(*routers)
 
     print("Бот запущен...")
