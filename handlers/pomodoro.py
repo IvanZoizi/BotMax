@@ -2,8 +2,8 @@
 from maxapi import Router, types, F
 from maxapi.context import MemoryContext
 from maxapi.enums.parse_mode import ParseMode
-from maxapi.types import MessageCreated, MessageCallback
-from maxapi.keyboard import InlineKeyboardBuilder, CallbackButton
+from maxapi.types import MessageCreated, MessageCallback, CallbackButton, RequestGeoLocationButton
+from maxapi.utils.inline_keyboard import InlineKeyboardBuilder
 
 from utils import *
 from utils.pomodoro_session import PomodoroSession
@@ -65,7 +65,7 @@ async def break_period_finished(user_id: int, event_id: int):
 
 @pomodoro_router.message_callback(F.callback.payload == 'pomodoro')
 async def start_pomodoro(callback: MessageCallback, context: MemoryContext):
-    user_id = callback.from_user.id
+    user_id = callback.from_user.user_id
     user_steps = await Dbase.get_user_steps(user_id)
 
     if not user_steps:
@@ -88,7 +88,7 @@ async def start_pomodoro(callback: MessageCallback, context: MemoryContext):
 
 @pomodoro_router.message_callback(F.callback.payload.startswith('pomodoro_start:'))
 async def start_pomodoro_session(callback: MessageCallback, context: MemoryContext):
-    user_id = callback.from_user.id
+    user_id = callback.from_user.user_id
     event_id = int(callback.callback.payload.split(':')[1])
 
     # Создаем и загружаем сессию
@@ -113,7 +113,7 @@ async def start_pomodoro_session(callback: MessageCallback, context: MemoryConte
 
 @pomodoro_router.message_callback(F.callback.payload.startswith('pomodoro_work:'))
 async def start_work_period(callback: MessageCallback, context: MemoryContext):
-    user_id = callback.from_user.id
+    user_id = callback.from_user.user_id
     event_id = int(callback.callback.payload.split(':')[1])
 
     session = PomodoroSession(event_id, user_id)
@@ -154,7 +154,7 @@ async def pomodoro_timer(duration: int, user_id: int, event_id: int, callback):
 
 @pomodoro_router.message_callback(F.callback.payload.startswith('pomodoro_break:'))
 async def start_break_period(callback: MessageCallback, context: MemoryContext):
-    user_id = callback.from_user.id
+    user_id = callback.from_user.user_id
     event_id = int(callback.callback.payload.split(':')[1])
 
     session = PomodoroSession(event_id, user_id)
@@ -182,7 +182,7 @@ async def start_break_period(callback: MessageCallback, context: MemoryContext):
 
 @pomodoro_router.message_callback(F.callback.payload == 'pomodoro_stats')
 async def show_pomodoro_stats(callback: MessageCallback, context: MemoryContext):
-    user_id = callback.from_user.id
+    user_id = callback.from_user.user_id
     stats = await Dbase.get_user_pomodoro_stats(user_id) ## TODO: написать метод БД
 
     total_hours = stats['total_work_time'] // 3600
