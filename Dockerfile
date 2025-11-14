@@ -39,5 +39,5 @@ ENV PYTHONPATH="/app"
 USER appuser
 
 # Запускаем приложение
-CMD ["python", "/app/bot.py"]
+CMD ["python", "/app/main.py"]
 
