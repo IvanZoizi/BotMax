@@ -1,6 +1,6 @@
 import asyncio
 from datetime import datetime, timedelta
-from utils import dbase
+from utils import Dbase
 
 
 class PomodoroSession:
@@ -19,7 +19,7 @@ class PomodoroSession:
 
     async def load_from_db(self):
         """Загрузить данные из БД"""
-        session_data = await dbase.get_pomodoro_session(self.user_id, self.event_id)
+        session_data = await Dbase.get_pomodoro_session(self.user_id, self.event_id)
         if session_data:
             self.work_duration = session_data['work_duration']
             self.break_duration = session_data['break_duration']
@@ -44,11 +44,11 @@ class PomodoroSession:
             'time_remaining': self.time_remaining,
             'end_time': self.end_time
         }
-        await dbase.save_pomodoro_session(session_data)
+        await Dbase.save_pomodoro_session(session_data)
 
     async def delete_from_db(self):
         """Удалить сессию из БД"""
-        await dbase.delete_pomodoro_session(self.user_id, self.event_id)
+        await Dbase.delete_pomodoro_session(self.user_id, self.event_id)
 
     async def start_work(self):
         """Начать рабочий период"""
@@ -75,7 +75,7 @@ class PomodoroSession:
     async def complete_pomodoro(self):
         """Завершить помодоро"""
         self.pomodoros_completed += 1
-        await dbase.update_pomodoro_stats(self.user_id, self.event_id, self.work_duration)
+        await Dbase.update_pomodoro_stats(self.user_id, self.event_id, self.work_duration)
         await self.save_to_db()
 
     async def pause(self):

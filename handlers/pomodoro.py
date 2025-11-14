@@ -66,7 +66,7 @@ async def break_period_finished(user_id: int, event_id: int):
 @pomodoro_router.message_callback(F.callback.payload == 'pomodoro')
 async def start_pomodoro(callback: MessageCallback, context: MemoryContext):
     user_id = callback.from_user.id
-    user_steps = await database.get_user_steps(user_id)
+    user_steps = await Dbase.get_user_steps(user_id)
 
     if not user_steps:
         await callback.message.answer("У вас нет активных событий для работы по Pomodoro")
@@ -183,7 +183,7 @@ async def start_break_period(callback: MessageCallback, context: MemoryContext):
 @pomodoro_router.message_callback(F.callback.payload == 'pomodoro_stats')
 async def show_pomodoro_stats(callback: MessageCallback, context: MemoryContext):
     user_id = callback.from_user.id
-    stats = await database.get_user_pomodoro_stats(user_id) ## TODO: написать метод БД
+    stats = await Dbase.get_user_pomodoro_stats(user_id) ## TODO: написать метод БД
 
     total_hours = stats['total_work_time'] // 3600
     total_minutes = (stats['total_work_time'] % 3600) // 60
