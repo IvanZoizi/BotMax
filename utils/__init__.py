@@ -1,3 +1,3 @@
-from .states import RegistrationStates, UpdateUserGoalsStates
+from .states import RegistrationStates, UpdateUserGoalsStates, NotificationState
 from .kb import *
 from .dbase import Dbase

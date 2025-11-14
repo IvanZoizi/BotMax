@@ -10,3 +10,10 @@ class RegistrationStates(StatesGroup):
 class UpdateUserGoalsStates(StatesGroup):
     goals = State()
     steps = State()
+
+
+class NotificationState(StatesGroup):
+
+    set_time = State()
+
+    update_time = State()
