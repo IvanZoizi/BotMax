@@ -4,5 +4,4 @@ from .dbase import Dbase
 
 
 
-
-db = Dbase()
+database = Dbase()
