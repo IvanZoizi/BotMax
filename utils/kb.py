@@ -12,12 +12,21 @@ def steps_kb():
     )
     return kb.as_markup()
 
+def steps_for_update_kb():
+    kb = InlineKeyboardBuilder()
+    kb.row(
+        CallbackButton(
+            text='✅ Закончить шаги',
+            payload='end_to_step_update',
+        ),
+    )
+    return kb.as_markup()
 
 def start_kb():
     kb = InlineKeyboardBuilder()
     kb.row(CallbackButton(text='👤 Мой профиль', payload='profile'))
     kb.row(CallbackButton(text='🏆 Топ пользователей', payload='top'))
-    kb.row(CallbackButton(text='🎯 Мои цели', payload='goals'))
+    kb.row(CallbackButton(text='🎯 Изменить цели и шаги', payload='update_goals'))
     kb.row(CallbackButton(text='⏱ Pomodoro', payload='pomodoro'))
     return kb.as_markup()
 

@@ -11,26 +11,124 @@ users_routers = Router()
 @users_routers.message_callback(F.callback.payload == 'profile')
 async def end_to_step(call: MessageCallback):
     await call.message.delete()
-    user = await dbase.get_user(call.from_user.user_id)
-    await call.message.answer(f"""📊 **Ваш профиль:**
+    user = await Dbase.get_user(call.from_user.user_id)
+    await call.message.answer(f"""🌟 **Ваш профиль**
 
 👤 **Имя:** {user[1]}
 📧 **Email:** {user[2]}
 🎯 **Цель:** {user[3]}
-📈 **Шагов выполнено:** {user[4]}
-📅 **Дней с нами:** {user[5]}
-🔥 **Дней подряд:** {user[6]}
+📅 **С нами уже:** {user[4]} дней
+🔥 **Активная серия:** {user[5]} дней подряд
 
-Продолжаем в том же духе! 💪""",
+💫 Продолжайте двигаться к своим целям! Каждый день — это новая возможность стать лучше.""",
                               parse_mode=ParseMode.MARKDOWN, attachments=[start_kb()])
 
 
 @users_routers.message_callback(F.callback.payload == 'top')
 async def end_to_step(call: MessageCallback):
     await call.message.delete()
-    users = await dbase.get_top_users()
-    text = "🏆 **Топ самых продуктивных:**\n\n"
+    users = await Dbase.get_top_users()
+    text = "🏆 **Топ самых продуктивных пользователей:**\n\n"
     for count, user in enumerate(users):
-        text += f"{count + 1}️⃣ {user[0]} - {user[1]} дней\n"
+        emoji = ["🥇", "🥈", "🥉"][count] if count < 3 else f"{count + 1}️⃣"
+        text += f"{emoji} {user[0]} — {user[1]} дней\n"
+
+    text += "\n💪 Ваше имя тоже может быть здесь! Продолжайте работать над своими целями."
 
     await call.message.answer(text, parse_mode=ParseMode.MARKDOWN, attachments=[start_kb()])
+
+
+@users_routers.message_callback(F.callback.payload == 'update_goals')
+async def update_goals(call: MessageCallback, context: MemoryContext):
+    await context.set_state(UpdateUserGoalsStates.goals)
+    await call.message.delete()
+    await call.message.answer("🎯 Напишите новую цель, к которой вы хотите прийти:")
+
+
+@users_routers.message_created(UpdateUserGoalsStates.goals)
+async def process_goal(event: MessageCreated, context: MemoryContext):
+    goal = event.message.body.text.strip()
+
+    if len(goal) < 10:
+        await event.message.answer(
+            "❌ Слишком короткое описание цели!\n\n"
+            "📝 Распишите вашу мечту более подробно (минимум 10 символов). "
+            "Чем детальнее вы опишете цель, тем легче будет построить путь к её достижению.\n\n"
+            "💫 Пример хорошей цели: \"Хочу научиться свободно говорить на английском языке, "
+            "чтобы уверенно чувствовать себя в путешествиях и читать профессиональную литературу\""
+        )
+        return
+
+    if len(goal) > 500:
+        await event.message.answer(
+            "❌ Слишком длинное описание цели!\n\n"
+            "📝 Сформулируйте цель более кратко (максимум 500 символов), "
+            "сохранив главную суть и вдохновение."
+        )
+        return
+
+    await context.update_data(goal=goal, steps=[])
+
+    await event.message.answer(
+        "✨ Отличная цель! Теперь превратим её в конкретный план действий.\n\n"
+        "📝 **Добавьте первый шаг к вашей цели:**\n\n"
+        "💡 **Примеры эффективных шагов:**\n"
+        "• Составлять план на день каждое утро\n"
+        "• Читать 15 минут профессиональной литературы в день\n"
+        "• Делать 10-минутную зарядку ежедневно\n"
+        "• Освоить технику Pomodoro для продуктивной работы\n"
+        "• Медитировать 5 минут перед сном\n\n"
+        "🎯 Добавляйте шаги последовательно — так большая цель станет легко достижимой!",
+        parse_mode=ParseMode.MARKDOWN
+    )
+    await context.set_state(UpdateUserGoalsStates.steps)
+
+
+@users_routers.message_created(UpdateUserGoalsStates.steps)
+async def get_step(event: MessageCreated, context: MemoryContext):
+    step = event.message.body.text.strip()
+
+    if len(step) < 5:
+        await event.message.answer(
+            "❌ Слишком короткое описание шага!\n\n"
+            "📝 Опишите шаг более подробно (минимум 5 символов). \n"
+            "🎯 Помните: конкретный шаг = конкретный результат!\n\n"
+            "💡 Пример хорошего шага: \"Читать 20 страниц книги по саморазвитию каждый вечер\""
+        )
+        return
+
+    data = await context.get_data()
+    steps = data['steps']
+    steps.append(step)
+
+    current_step_count = len(steps)
+
+    await event.message.answer(
+        f"✅ **Шаг {current_step_count} успешно добавлен!**\n\n"
+        f"📋 **Ваш план действий ({current_step_count} шагов):**\n" +
+        "\n".join([f"• {s}" for s in steps]) +
+        f"\n\n🎯 Продолжайте добавлять шаги или завершите планирование:",
+        attachments=[steps_for_update_kb()], parse_mode=ParseMode.MARKDOWN
+    )
+
+
+@users_routers.message_callback(F.callback.payload == 'end_to_step_update')
+async def end_to_step(call: MessageCallback, context: MemoryContext):
+    await call.message.delete()
+
+    data = await context.get_data()
+    await context.clear()
+
+    await Dbase.new_goal(call.from_user.user_id, data['goal'])
+    await Dbase.new_steps(call.from_user.user_id, data['steps'])
+
+    welcome_message = """✨ **Цель успешно обновлена!**
+
+🎯 Теперь у вас есть четкий план действий. Помните:
+• Маленькие шаги каждый день приводят к большим результатам
+• Регулярность — ключ к успеху
+• Отмечайте свои прогрессы
+
+💫 Вперёд к новым достижениям! Ваш будущий я будет благодарен вам за усилия сегодня."""
+
+    await call.message.answer(welcome_message, parse_mode=ParseMode.MARKDOWN)

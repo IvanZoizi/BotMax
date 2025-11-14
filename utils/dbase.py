@@ -114,13 +114,33 @@ class Dbase:
             return await conn.fetchrow("SELECT * FROM users WHERE user_id = $1", user_id)
 
     @staticmethod
+    async def new_steps(user_id, steps):
+        async with get_connection() as conn:
+            await conn.execute("""DELETE FROM steps WHERE user_id = $1""", user_id)
+            for step in steps:
+                print(step)
+                await conn.execute("""
+                    INSERT INTO steps (user_id, step) VALUES($1, $2)
+                """, user_id, step)
+
+    @staticmethod
+    async def new_goal(user_id, goal):
+        async with get_connection() as conn:
+            await conn.execute("""UPDATE users SET goal = $1 WHERE user_id = $2""", goal, user_id)
+
+    @staticmethod
     async def new_user(user_id, name, email, goal, steps):
         """Создать нового пользователя"""
         async with get_connection() as conn:
             await conn.execute("""
-                INSERT INTO users (user_id, name, email, goal, steps, everyday) 
-                VALUES ($1, $2, $3, $4, $5, 0)
-            """, user_id, name, email, goal, steps)
+                INSERT INTO users (user_id, name, email, goal, everyday) 
+                VALUES ($1, $2, $3, $4, 0)
+            """, user_id, name, email, goal)
+            for step in steps:
+                print(step)
+                await conn.execute("""
+                    INSERT INTO steps (user_id, step) VALUES($1, $2)
+                """, user_id, step)
 
     @staticmethod
     async def get_top_users():
