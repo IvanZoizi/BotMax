@@ -46,8 +46,8 @@
 
 ```bash
 # Клонируйте репозиторий
-git clone <your-repo-url>
-cd botmax
+git clone https://github.com/IvanZoizi/BotMax.git
+cd BotMax
 
 # Создайте файл конфигурации
 cp .env.example .env
@@ -128,25 +128,25 @@ networks:
 curl -LsSf https://astral.sh/uv/install.sh | sh
 
 # Клонируйте репозиторий
-git clone <your-repo-url>
-cd botmax
+git clone https://github.com/IvanZoizi/BotMax.git
+cd BotMax
 
 # Установите зависимости
 uv sync
 
 # Активируйте виртуальное окружение
-uv run python -m botmax
+uv run python -m BotMax
 
 # Или запустите напрямую
-uv run botmax
+uv run BotMax
 ```
 
 ### Способ 3: Классический pip
 
 ```bash
 # Клонируйте репозиторий
-git clone <your-repo-url>
-cd botmax
+git clone https://github.com/IvanZoizi/BotMax.git
+cd BotMax
 
 # Создайте виртуальное окружение
 python -m venv venv
@@ -158,7 +158,7 @@ venv\Scripts\activate  # Windows
 pip install -r requirements.txt
 
 # Запустите бота
-python -m botmax
+python -m BotMax
 ```
 
 ## ⚙️ Конфигурация
@@ -192,14 +192,6 @@ POSTGRES_DB=focus
 3. **⏰ Работаем по Pomodoro**
 
 4. **📊 Отслеживаем прогресс**
-
-
-## 🏗️ Архитектура
-
-```
-BotMax/
-
-```
 
 
 

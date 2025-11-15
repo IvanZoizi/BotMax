@@ -12,7 +12,6 @@ from utils import *
 from utils.pomodoro_session import PomodoroSession
 import asyncio
 from bot import bot
-
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
