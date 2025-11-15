@@ -10,6 +10,7 @@ user_router = Router()
 
 @user_router.message_created(RegistrationStates.waiting_for_name)
 async def process_name(event: MessageCreated, context: MemoryContext):
+    data = await context.get_data()
     name = event.message.body.text.strip()
 
     if len(name) < 2:
@@ -25,7 +26,6 @@ async def process_name(event: MessageCreated, context: MemoryContext):
         return
 
     await context.update_data(name=name)
-
     await event.message.answer(
         f"🎉 Прекрасно, {name}!\n\n"
         "📧 Теперь введите ваш email адрес. \n"
@@ -136,12 +136,12 @@ async def end_to_step(call: MessageCallback, context: MemoryContext):
     data = await context.get_data()
     await context.clear()
 
-    await dbase.new_user(
+    await Dbase.new_user(
         call.from_user.user_id,
         data['name'],
         data['email'],
         data['goal'],
-        '\n'.join(data['steps'])
+        data['steps']
     )
 
     steps_count = len(data['steps'])
@@ -159,12 +159,7 @@ async def end_to_step(call: MessageCallback, context: MemoryContext):
 📈 **План действий:** {steps_count} шаг(а/ов)
 
 🚀 **Что дальше?**
-Теперь вы готовы начать свой путь к невероятной продуктивности:
-
-• Используйте `/tasks` для работы с задачами
-• Настройте умные напоминания через `/reminders`  
-• Отслеживайте прогресс в `/stats`
-• Получите персональные рекомендации
+Теперь вы готовы начать свой путь к невероятной продуктивности
 
 💫 **Совет на сегодня:**
 *"Путь в тысячу миль начинается с первого шага" — и у вас их уже {steps_count}!*
