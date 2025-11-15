@@ -169,4 +169,4 @@ async def end_to_step(call: MessageCallback, context: MemoryContext):
 
 💫 Вперёд к новым достижениям! Ваш будущий я будет благодарен вам за усилия сегодня."""
 
-    await call.message.answer(welcome_message, parse_mode=ParseMode.MARKDOWN)
+    await call.message.answer(welcome_message, parse_mode=ParseMode.MARKDOWN, attachments=[start_kb()])
