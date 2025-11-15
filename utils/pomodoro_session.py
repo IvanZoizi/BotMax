@@ -95,3 +95,13 @@ class PomodoroSession:
             await self.save_to_db()
             return True
         return False
+
+    async def reset_session(self):
+        """Полностью сбросить сессию"""
+        self.is_working = False
+        self.is_break = False
+        self.is_paused = False
+        self.time_remaining = 0
+        self.end_time = None
+        self.pomodoros_completed = 0
+        await self.save_to_db()

@@ -63,7 +63,8 @@ async def init_db():
                     end_time TIMESTAMP,
                     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                    FOREIGN KEY (user_id) REFERENCES users (user_id) ON DELETE CASCADE
+                    FOREIGN KEY (user_id) REFERENCES users (user_id) ON DELETE CASCADE,
+                    UNIQUE (user_id, event_id)
                 );
             """)
 
@@ -367,6 +368,22 @@ WHERE DATE(entrance_at) = CURRENT_DATE - INTERVAL '$1 days';""", day)
     async def set_everyday_user(user_id, everyday):
         async with get_connection() as conn:
             await conn.execute("""UPDATE users SET everyday = $1 WHERE user_id = $2""", everyday, user_id)
+
+    @staticmethod
+    async def save_pomodoro_statistics(user_id: int, event_id: int, pomodoros_completed: int, total_work_time: int):
+        """Сохранить или обновить статистику Pomodoro"""
+        async with get_connection() as conn:
+            await conn.execute("""
+                INSERT INTO pomodoro_stats 
+                (user_id, event_id, pomodoros_completed, total_work_time, last_session)
+                VALUES ($1, $2, $3, $4, CURRENT_TIMESTAMP)
+                ON CONFLICT (user_id, event_id) 
+                DO UPDATE SET 
+                    pomodoros_completed = EXCLUDED.pomodoros_completed,
+                    total_work_time = EXCLUDED.total_work_time,
+                    last_session = EXCLUDED.last_session,
+                    updated_at = CURRENT_TIMESTAMP
+            """, user_id, event_id, pomodoros_completed, total_work_time)
 
 
 async def main():
